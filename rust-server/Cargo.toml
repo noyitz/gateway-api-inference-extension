@@ -1,0 +1,33 @@
+[package]
+name = "ipp-rust-server"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+
+[[bin]]
+name = "ipp-server"
+path = "src/main.rs"
+
+[lib]
+name = "ipp_server_lib"
+path = "src/lib.rs"
+
+[dependencies]
+# Plugin crates from ai-gateway-payload-processing (feature/rust-plugins branch)
+ext-proc-proto = { git = "https://github.com/noyitz/ai-gateway-payload-processing.git", branch = "feature/rust-plugins", package = "ext-proc-proto" }
+ipp-framework = { git = "https://github.com/noyitz/ai-gateway-payload-processing.git", branch = "feature/rust-plugins", package = "ipp-framework" }
+ipp-translators = { git = "https://github.com/noyitz/ai-gateway-payload-processing.git", branch = "feature/rust-plugins", package = "ipp-translators" }
+ipp-k8s-plugins = { git = "https://github.com/noyitz/ai-gateway-payload-processing.git", branch = "feature/rust-plugins", package = "ipp-k8s-plugins" }
+
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+tonic = "0.12"
+prost = "0.13"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+tokio-stream = "0.1"
+kube = { version = "0.98", features = ["runtime", "derive"] }
+k8s-openapi = { version = "0.24", features = ["v1_31"] }
