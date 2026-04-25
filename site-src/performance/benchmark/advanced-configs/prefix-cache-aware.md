@@ -36,7 +36,7 @@ helm install my-release ../inference-perf -f long-prefix__many-templates-values.
 
 This chart supports four configurations located under `gateway-api-inference-extension/benchmarking/prefix-cache-aware`:
 
-*   `short-questions__many-system-prompts-values.yaml`: Low System Prompt Overlap, High System Cache Pressure
+*   `short-questions__many-system-prompts-values.yaml`: High System Prompt Overlap, High System Cache Pressure
 *   `long-questions__many-system-prompts-values.yaml`: Low System Prompt Overlap, Low System Cache Pressure
 *   `short-questions__few-system-prompts-values__multi-chat-values.yaml`: High System Prompt Overlap, No System Cache Pressure
 *   `long-questions__few-system-prompts-values__multi-chat-values.yaml`: Low System Prompt Overlap, No System Cache Pressure
@@ -120,5 +120,7 @@ The following E2E test runs on GitHub using GitHub Actions.
 > Please make sure there is no other GKE tests of the same type running at the same time, as they can interfere with each other.
 
 
+| Test name	| Link | PR comment trigger
 | :--- | :--- | :--- |
-| GKE Prefix Cache Aware Test	| https://github.com/gateway-api-inference-extension/.github/workflows/e2e-prefix-cache-aware-gke.yaml | /run-gke-prefix-cache |
+| GKE Prefix Cache Aware Test | https://github.com/gateway-api-inference-extension/.github/workflows/e2e-prefill-heavy-gke.yaml | /run-gke-prefix-cache |
+| GKE Prefill Heavy Test with Standalone EPP	| https://github.com/gateway-api-inference-extension/.github/workflows/e2e-prefill-heavy-gke-standlone-epp.yaml | /run-gke-prefix-cache-standalone-epp |

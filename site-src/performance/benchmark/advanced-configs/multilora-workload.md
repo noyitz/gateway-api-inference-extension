@@ -140,3 +140,4 @@ The following E2E test runs on GitHub using GitHub Actions.
 | Test name	| Link | PR comment trigger
 | :--- | :--- | :--- |
 | GKE Multilora Test | https://github.com/gateway-api-inference-extension/.github/workflows/e2e-multilora-gke.yaml | /run-gke-multilora |
+| GKE Multilora Test with Standalone EPP | https://github.com/gateway-api-inference-extension/.github/workflows/e2e-multilora-gke-standalone-epp.yaml | /run-gke-multilora-standalone-epp |

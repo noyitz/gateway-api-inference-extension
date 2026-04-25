@@ -140,3 +140,4 @@ The following E2E test runs on GitHub using GitHub Actions.
 | Test name	| Link | PR comment trigger
 | :--- | :--- | :--- |
 | GKE Prefill Heavy Test | https://github.com/gateway-api-inference-extension/.github/workflows/e2e-prefill-heavy-gke.yaml | /run-gke-prefill-heavy |
+| GKE Prefill Heavy Test with Standalone EPP	| https://github.com/gateway-api-inference-extension/.github/workflows/e2e-prefill-heavy-gke-standlone-epp.yaml | /run-gke-prefill-heavy-standalone-epp |
