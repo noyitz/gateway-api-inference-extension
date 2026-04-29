@@ -9,7 +9,7 @@ name = "ipp-server"
 path = "src/main.rs"
 
 [lib]
-name = "ipp_server_lib"
+name = "ipp_server"
 path = "src/lib.rs"
 doctest = false
 
