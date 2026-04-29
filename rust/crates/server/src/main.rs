@@ -1,6 +1,6 @@
 pub mod ext_proc_handler;
 mod health;
-mod metrics;
+pub mod metrics;
 
 use std::net::SocketAddr;
 
@@ -77,7 +77,6 @@ async fn build_plugins(
     let api_translation_resp = ApiTranslationPlugin::new(vertex_config)?;
     let response_plugins: Vec<Box<dyn ResponseProcessor>> = vec![Box::new(api_translation_resp)];
 
-    // Start kube-rs reconcilers
     let kube_client = kube::Client::try_default().await.ok();
     if let Some(client) = kube_client {
         let ss = secret_store.clone();
@@ -87,7 +86,6 @@ async fn build_plugins(
         info!("Started Secret reconciler");
     }
 
-    info!("Using upstream generic plugins");
     Ok((request_plugins, response_plugins))
 }
 
@@ -105,22 +103,24 @@ async fn main() -> Result<()> {
 
     let (request_plugins, response_plugins) = build_plugins(&cli).await?;
 
+    let metrics_instance = metrics::Metrics::new()
+        .map_err(|e| anyhow::anyhow!("Failed to initialize metrics: {}", e))?;
+
     let health_port = cli.health_port;
-    tokio::spawn(async move {
+    let health_handle = tokio::spawn(async move {
         if let Err(e) = health::serve_health(health_port).await {
             error!(error = %e, "Health server failed");
         }
     });
 
-    let metrics_instance = metrics::Metrics::new();
     let metrics_clone = metrics_instance.clone();
-    tokio::spawn(async move {
+    let metrics_handle = tokio::spawn(async move {
         if let Err(e) = metrics::serve_metrics(9090, metrics_clone).await {
             error!(error = %e, "Metrics server failed");
         }
     });
 
-    let ext_proc = ExtProcServer::new(request_plugins, response_plugins);
+    let ext_proc = ExtProcServer::new(request_plugins, response_plugins, metrics_instance);
     let addr: SocketAddr = format!("0.0.0.0:{}", cli.grpc_port).parse()?;
 
     info!(
@@ -131,16 +131,26 @@ async fn main() -> Result<()> {
     );
 
     let shutdown = async {
-        tokio::signal::ctrl_c()
-            .await
-            .expect("failed to install CTRL+C handler");
+        if let Err(e) = tokio::signal::ctrl_c().await {
+            error!(error = %e, "Failed to install signal handler");
+            return;
+        }
         info!("Received shutdown signal, draining connections...");
     };
 
-    Server::builder()
-        .add_service(ExternalProcessorServer::new(ext_proc))
-        .serve_with_shutdown(addr, shutdown)
-        .await?;
+    tokio::select! {
+        result = Server::builder()
+            .add_service(ExternalProcessorServer::new(ext_proc))
+            .serve_with_shutdown(addr, shutdown) => {
+            result?;
+        }
+        _ = health_handle => {
+            error!("Health server exited unexpectedly");
+        }
+        _ = metrics_handle => {
+            error!("Metrics server exited unexpectedly");
+        }
+    }
 
     info!("Server shutdown complete");
     Ok(())

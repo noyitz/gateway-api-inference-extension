@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use ext_proc_proto::envoy::config::core::v3::{HeaderValue, HeaderValueOption};
 use ext_proc_proto::envoy::service::ext_proc::v3::processing_response::Response;
@@ -16,21 +16,26 @@ use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Status, Streaming};
 use tracing::{error, warn};
 
+use crate::metrics::Metrics;
+
 const STREAM_TIMEOUT: Duration = Duration::from_secs(30);
 
 pub struct ExtProcServer {
     request_plugins: Arc<Vec<Box<dyn RequestProcessor>>>,
     response_plugins: Arc<Vec<Box<dyn ResponseProcessor>>>,
+    metrics: Arc<Metrics>,
 }
 
 impl ExtProcServer {
     pub fn new(
         request_plugins: Vec<Box<dyn RequestProcessor>>,
         response_plugins: Vec<Box<dyn ResponseProcessor>>,
+        metrics: Metrics,
     ) -> Self {
         Self {
             request_plugins: Arc::new(request_plugins),
             response_plugins: Arc::new(response_plugins),
+            metrics: Arc::new(metrics),
         }
     }
 }
@@ -48,6 +53,7 @@ impl ExternalProcessor for ExtProcServer {
 
         let req_plugins = self.request_plugins.clone();
         let resp_plugins = self.response_plugins.clone();
+        let metrics = self.metrics.clone();
 
         tokio::spawn(async move {
             let mut cycle_state = CycleState::new();
@@ -59,7 +65,7 @@ impl ExternalProcessor for ExtProcServer {
             loop {
                 let msg = match tokio::time::timeout(STREAM_TIMEOUT, stream.message()).await {
                     Ok(Ok(Some(msg))) => msg,
-                    Ok(Ok(None)) => break, // stream closed
+                    Ok(Ok(None)) => break,
                     Ok(Err(e)) => {
                         error!(error = %e, "gRPC stream error");
                         break;
@@ -74,11 +80,21 @@ impl ExternalProcessor for ExtProcServer {
                         extract_headers(headers, &mut inference_request.inner);
 
                         if headers.end_of_stream {
-                            run_request_plugins_and_respond(
+                            let start = Instant::now();
+                            let result = run_request_plugins_and_respond(
                                 &req_plugins,
                                 &mut cycle_state,
                                 &mut inference_request,
-                            )
+                            );
+                            metrics
+                                .request_duration
+                                .with_label_values(&["request"])
+                                .observe(start.elapsed().as_secs_f64());
+                            match &result {
+                                Ok(_) => metrics.request_total.with_label_values(&["success"]).inc(),
+                                Err(_) => metrics.request_total.with_label_values(&["error"]).inc(),
+                            }
+                            result
                         } else {
                             Ok(ProcessingResponse {
                                 response: Some(
@@ -98,11 +114,21 @@ impl ExternalProcessor for ExtProcServer {
                                     warn!(error = %e, size = request_body_buf.len(), "Failed to parse request body as JSON")
                                 }
                             }
-                            run_request_plugins_and_respond(
+                            let start = Instant::now();
+                            let result = run_request_plugins_and_respond(
                                 &req_plugins,
                                 &mut cycle_state,
                                 &mut inference_request,
-                            )
+                            );
+                            metrics
+                                .request_duration
+                                .with_label_values(&["request"])
+                                .observe(start.elapsed().as_secs_f64());
+                            match &result {
+                                Ok(_) => metrics.request_total.with_label_values(&["success"]).inc(),
+                                Err(_) => metrics.request_total.with_label_values(&["error"]).inc(),
+                            }
+                            result
                         } else {
                             continue;
                         }
@@ -111,11 +137,17 @@ impl ExternalProcessor for ExtProcServer {
                         extract_headers(headers, &mut inference_response.inner);
 
                         if headers.end_of_stream {
-                            run_response_plugins_and_respond(
+                            let start = Instant::now();
+                            let result = run_response_plugins_and_respond(
                                 &resp_plugins,
                                 &mut cycle_state,
                                 &mut inference_response,
-                            )
+                            );
+                            metrics
+                                .request_duration
+                                .with_label_values(&["response"])
+                                .observe(start.elapsed().as_secs_f64());
+                            result
                         } else {
                             Ok(ProcessingResponse {
                                 response: Some(Response::ResponseHeaders(
@@ -135,11 +167,17 @@ impl ExternalProcessor for ExtProcServer {
                                     warn!(error = %e, size = response_body_buf.len(), "Failed to parse response body as JSON")
                                 }
                             }
-                            run_response_plugins_and_respond(
+                            let start = Instant::now();
+                            let result = run_response_plugins_and_respond(
                                 &resp_plugins,
                                 &mut cycle_state,
                                 &mut inference_response,
-                            )
+                            );
+                            metrics
+                                .request_duration
+                                .with_label_values(&["response"])
+                                .observe(start.elapsed().as_secs_f64());
+                            result
                         } else {
                             continue;
                         }
@@ -232,11 +270,9 @@ fn run_request_plugins_and_respond(
         }
     }
 
-    // Serialize body once, use for both content-length and body mutation
     if request.body_mutated() {
         if let Ok(body_bytes) = serde_json::to_vec(&request.body) {
             request.set_header("content-length", body_bytes.len().to_string());
-            // Store pre-serialized body to avoid double serialization
             let common = CommonResponse {
                 header_mutation: {
                     let mutated = request.mutated_headers();

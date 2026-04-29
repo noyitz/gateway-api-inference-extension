@@ -128,13 +128,13 @@ fn strip_field(
         return mutated;
     }
 
-    let child = match obj.get_mut(&seg.key).and_then(Value::as_object_mut) {
-        Some(child) => child as *mut serde_json::Map<String, Value>,
-        None => return false,
-    };
-    // Safety: we need to reborrow mutably after the immutable borrow above ends.
-    // The pointer is valid for the lifetime of `obj`.
-    unsafe { strip_field(&mut *child, path, idx + 1) }
+    if !obj.contains_key(&seg.key) {
+        return false;
+    }
+    match obj.get_mut(&seg.key).and_then(Value::as_object_mut) {
+        Some(child) => strip_field(child, path, idx + 1),
+        None => false,
+    }
 }
 
 #[cfg(test)]

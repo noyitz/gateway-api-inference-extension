@@ -13,18 +13,19 @@ use super::secret_store::SecretStore;
 const MANAGED_LABEL: &str = "inference.networking.k8s.io/bbr-managed";
 
 pub async fn run_secret_watcher(client: Client, store: SecretStore) {
-    let api: Api<Secret> = Api::all(client);
-    let config = watcher::Config::default().labels(&format!("{}=true", MANAGED_LABEL));
-
-    info!(
-        "Starting Secret watcher with label selector {}=true",
-        MANAGED_LABEL
-    );
-
-    let mut stream = watcher::watcher(api, config).applied_objects().boxed();
-
     loop {
-        match stream.next().await {
+        let api: Api<Secret> = Api::all(client.clone());
+        let config = watcher::Config::default().labels(&format!("{}=true", MANAGED_LABEL));
+
+        info!(
+            "Starting Secret watcher with label selector {}=true",
+            MANAGED_LABEL
+        );
+
+        let mut stream = watcher::watcher(api, config).applied_objects().boxed();
+
+        loop {
+            match stream.next().await {
             Some(Ok(secret)) => {
                 let name = secret.metadata.name.clone().unwrap_or_default();
                 let namespace = secret.metadata.namespace.clone().unwrap_or_default();
@@ -61,9 +62,11 @@ pub async fn run_secret_watcher(client: Client, store: SecretStore) {
                 warn!(error = %e, "Secret watcher error");
             }
             None => {
-                warn!("Secret watcher stream ended");
+                warn!("Secret watcher stream ended, reconnecting in 5s...");
                 break;
             }
         }
+        }
+        tokio::time::sleep(std::time::Duration::from_secs(5)).await;
     }
 }
