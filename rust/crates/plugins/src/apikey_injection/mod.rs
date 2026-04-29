@@ -110,14 +110,12 @@ impl RequestProcessor for ApiKeyInjectionPlugin {
             PluginError::internal(format!("unsupported provider - '{}'", provider_name))
         })?;
 
-        let auth_headers = generator
-            .generate_auth_headers(&credentials)
-            .map_err(|e| {
-                PluginError::internal(format!(
-                    "failed to generate auth headers for provider '{}': {}",
-                    provider_name, e
-                ))
-            })?;
+        let auth_headers = generator.generate_auth_headers(&credentials).map_err(|e| {
+            PluginError::internal(format!(
+                "failed to generate auth headers for provider '{}': {}",
+                provider_name, e
+            ))
+        })?;
 
         for (key, value) in auth_headers {
             request.set_header(key, value);
@@ -136,15 +134,11 @@ mod tests {
         let store = SecretStore::new();
         let mut creds = HashMap::new();
         creds.insert("api-key".to_string(), "sk-openai-123".to_string());
-        store
-            .add_or_update("bbr-e2e/e2e-openai", creds)
-            .unwrap();
+        store.add_or_update("bbr-e2e/e2e-openai", creds).unwrap();
 
         let mut creds = HashMap::new();
         creds.insert("api-key".to_string(), "sk-ant-123".to_string());
-        store
-            .add_or_update("bbr-e2e/e2e-anthropic", creds)
-            .unwrap();
+        store.add_or_update("bbr-e2e/e2e-anthropic", creds).unwrap();
 
         let mut creds = HashMap::new();
         creds.insert("api-key".to_string(), "azure-key-123".to_string());
@@ -159,10 +153,7 @@ mod tests {
         let mut cs = CycleState::new();
         cs.write(state_keys::PROVIDER, "openai".to_string());
         cs.write(state_keys::CREDS_REF_NAME, "e2e-openai".to_string());
-        cs.write(
-            state_keys::CREDS_REF_NAMESPACE,
-            "bbr-e2e".to_string(),
-        );
+        cs.write(state_keys::CREDS_REF_NAMESPACE, "bbr-e2e".to_string());
 
         let mut req = InferenceRequest::new();
         req.set_body(json!({}));
@@ -179,14 +170,8 @@ mod tests {
         let plugin = ApiKeyInjectionPlugin::new(setup_store());
         let mut cs = CycleState::new();
         cs.write(state_keys::PROVIDER, "anthropic".to_string());
-        cs.write(
-            state_keys::CREDS_REF_NAME,
-            "e2e-anthropic".to_string(),
-        );
-        cs.write(
-            state_keys::CREDS_REF_NAMESPACE,
-            "bbr-e2e".to_string(),
-        );
+        cs.write(state_keys::CREDS_REF_NAME, "e2e-anthropic".to_string());
+        cs.write(state_keys::CREDS_REF_NAMESPACE, "bbr-e2e".to_string());
 
         let mut req = InferenceRequest::new();
         req.set_body(json!({}));
@@ -201,10 +186,7 @@ mod tests {
         let mut cs = CycleState::new();
         cs.write(state_keys::PROVIDER, "azure-openai".to_string());
         cs.write(state_keys::CREDS_REF_NAME, "e2e-azure".to_string());
-        cs.write(
-            state_keys::CREDS_REF_NAMESPACE,
-            "bbr-e2e".to_string(),
-        );
+        cs.write(state_keys::CREDS_REF_NAMESPACE, "bbr-e2e".to_string());
 
         let mut req = InferenceRequest::new();
         req.set_body(json!({}));
@@ -244,14 +226,8 @@ mod tests {
         let plugin = ApiKeyInjectionPlugin::new(setup_store());
         let mut cs = CycleState::new();
         cs.write(state_keys::PROVIDER, "openai".to_string());
-        cs.write(
-            state_keys::CREDS_REF_NAME,
-            "nonexistent".to_string(),
-        );
-        cs.write(
-            state_keys::CREDS_REF_NAMESPACE,
-            "bbr-e2e".to_string(),
-        );
+        cs.write(state_keys::CREDS_REF_NAME, "nonexistent".to_string());
+        cs.write(state_keys::CREDS_REF_NAMESPACE, "bbr-e2e".to_string());
 
         let mut req = InferenceRequest::new();
         req.set_body(json!({}));

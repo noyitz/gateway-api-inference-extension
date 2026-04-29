@@ -192,10 +192,7 @@ mod tests {
         p.process_request(&mut cs, &mut req).unwrap();
 
         assert_eq!(req.headers.get(":path").unwrap(), "/v1/messages");
-        assert_eq!(
-            req.headers.get("anthropic-version").unwrap(),
-            "2023-06-01"
-        );
+        assert_eq!(req.headers.get("anthropic-version").unwrap(), "2023-06-01");
         assert!(req.body_mutated());
         assert_eq!(req.body["model"], "claude-3-5-sonnet-20241022");
         assert!(req.body.get("messages").is_some());
@@ -275,10 +272,7 @@ mod tests {
         let p = plugin();
         let mut cs = CycleState::new();
         cs.write(state_keys::PROVIDER, "anthropic".to_string());
-        cs.write(
-            state_keys::MODEL,
-            "claude-3-5-sonnet-20241022".to_string(),
-        );
+        cs.write(state_keys::MODEL, "claude-3-5-sonnet-20241022".to_string());
 
         let mut resp = InferenceResponse::new();
         resp.set_body(json!({

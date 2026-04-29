@@ -1,6 +1,8 @@
 use std::net::SocketAddr;
 
-use prometheus::{Encoder, HistogramOpts, HistogramVec, IntCounterVec, Opts, Registry, TextEncoder};
+use prometheus::{
+    Encoder, HistogramOpts, HistogramVec, IntCounterVec, Opts, Registry, TextEncoder,
+};
 use tokio::io::AsyncWriteExt;
 use tracing::info;
 
@@ -17,8 +19,11 @@ impl Metrics {
         let registry = Registry::new();
 
         let request_duration = HistogramVec::new(
-            HistogramOpts::new("ipp_request_duration_seconds", "Request processing duration")
-                .buckets(vec![0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0]),
+            HistogramOpts::new(
+                "ipp_request_duration_seconds",
+                "Request processing duration",
+            )
+            .buckets(vec![0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0]),
             &["phase"],
         )
         .unwrap();
@@ -35,7 +40,9 @@ impl Metrics {
         )
         .unwrap();
 
-        registry.register(Box::new(request_duration.clone())).unwrap();
+        registry
+            .register(Box::new(request_duration.clone()))
+            .unwrap();
         registry.register(Box::new(request_total.clone())).unwrap();
         registry.register(Box::new(plugin_errors.clone())).unwrap();
 
@@ -56,7 +63,10 @@ impl Metrics {
     }
 }
 
-pub async fn serve_metrics(port: u16, metrics: Metrics) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+pub async fn serve_metrics(
+    port: u16,
+    metrics: Metrics,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let addr: SocketAddr = format!("0.0.0.0:{}", port).parse()?;
     info!(port = port, "Starting metrics server");
 

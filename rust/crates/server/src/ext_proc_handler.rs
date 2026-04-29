@@ -4,9 +4,9 @@ use std::time::Duration;
 use ext_proc_proto::envoy::config::core::v3::{HeaderValue, HeaderValueOption};
 use ext_proc_proto::envoy::service::ext_proc::v3::processing_response::Response;
 use ext_proc_proto::envoy::service::ext_proc::v3::{
-    body_mutation, external_processor_server::ExternalProcessor, processing_request,
-    BodyMutation, BodyResponse, CommonResponse, HeaderMutation, HeadersResponse,
-    HttpHeaders, ProcessingRequest, ProcessingResponse,
+    body_mutation, external_processor_server::ExternalProcessor, processing_request, BodyMutation,
+    BodyResponse, CommonResponse, HeaderMutation, HeadersResponse, HttpHeaders, ProcessingRequest,
+    ProcessingResponse,
 };
 use ipp_framework::cycle_state::CycleState;
 use ipp_framework::inference_message::{InferenceMessage, InferenceRequest, InferenceResponse};
@@ -81,9 +81,9 @@ impl ExternalProcessor for ExtProcServer {
                             )
                         } else {
                             Ok(ProcessingResponse {
-                                response: Some(Response::RequestHeaders(
-                                    HeadersResponse::default(),
-                                )),
+                                response: Some(
+                                    Response::RequestHeaders(HeadersResponse::default()),
+                                ),
                                 ..Default::default()
                             })
                         }
@@ -94,7 +94,9 @@ impl ExternalProcessor for ExtProcServer {
                         if body.end_of_stream {
                             match serde_json::from_slice::<serde_json::Value>(&request_body_buf) {
                                 Ok(parsed) => inference_request.inner.body = parsed,
-                                Err(e) => warn!(error = %e, size = request_body_buf.len(), "Failed to parse request body as JSON"),
+                                Err(e) => {
+                                    warn!(error = %e, size = request_body_buf.len(), "Failed to parse request body as JSON")
+                                }
                             }
                             run_request_plugins_and_respond(
                                 &req_plugins,
@@ -129,7 +131,9 @@ impl ExternalProcessor for ExtProcServer {
                         if body.end_of_stream {
                             match serde_json::from_slice::<serde_json::Value>(&response_body_buf) {
                                 Ok(parsed) => inference_response.inner.body = parsed,
-                                Err(e) => warn!(error = %e, size = response_body_buf.len(), "Failed to parse response body as JSON"),
+                                Err(e) => {
+                                    warn!(error = %e, size = response_body_buf.len(), "Failed to parse response body as JSON")
+                                }
                             }
                             run_response_plugins_and_respond(
                                 &resp_plugins,
@@ -206,9 +210,11 @@ fn build_mutations(msg: &InferenceMessage) -> (Option<HeaderMutation>, Option<Bo
     let body_mutation = if !msg.body_mutated() {
         None
     } else {
-        serde_json::to_vec(&msg.body).ok().map(|bytes| BodyMutation {
-            mutation: Some(body_mutation::Mutation::Body(bytes)),
-        })
+        serde_json::to_vec(&msg.body)
+            .ok()
+            .map(|bytes| BodyMutation {
+                mutation: Some(body_mutation::Mutation::Body(bytes)),
+            })
     };
 
     (header_mutation, body_mutation)
@@ -239,14 +245,17 @@ fn run_request_plugins_and_respond(
                         None
                     } else {
                         Some(HeaderMutation {
-                            set_headers: mutated.iter().map(|(k, v)| HeaderValueOption {
-                                header: Some(HeaderValue {
-                                    key: k.clone(),
-                                    raw_value: v.as_bytes().to_vec(),
+                            set_headers: mutated
+                                .iter()
+                                .map(|(k, v)| HeaderValueOption {
+                                    header: Some(HeaderValue {
+                                        key: k.clone(),
+                                        raw_value: v.as_bytes().to_vec(),
+                                        ..Default::default()
+                                    }),
                                     ..Default::default()
-                                }),
-                                ..Default::default()
-                            }).collect(),
+                                })
+                                .collect(),
                             remove_headers: removed,
                             ..Default::default()
                         })
@@ -302,14 +311,17 @@ fn run_response_plugins_and_respond(
                         None
                     } else {
                         Some(HeaderMutation {
-                            set_headers: mutated.iter().map(|(k, v)| HeaderValueOption {
-                                header: Some(HeaderValue {
-                                    key: k.clone(),
-                                    raw_value: v.as_bytes().to_vec(),
+                            set_headers: mutated
+                                .iter()
+                                .map(|(k, v)| HeaderValueOption {
+                                    header: Some(HeaderValue {
+                                        key: k.clone(),
+                                        raw_value: v.as_bytes().to_vec(),
+                                        ..Default::default()
+                                    }),
                                     ..Default::default()
-                                }),
-                                ..Default::default()
-                            }).collect(),
+                                })
+                                .collect(),
                             remove_headers: removed,
                             ..Default::default()
                         })

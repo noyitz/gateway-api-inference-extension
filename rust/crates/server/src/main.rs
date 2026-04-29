@@ -14,7 +14,10 @@ use tracing::{error, info, warn};
 use ext_proc_handler::ExtProcServer;
 
 #[derive(Parser, Debug)]
-#[command(name = "ipp-server", about = "Rust ext_proc server for AI Gateway payload processing")]
+#[command(
+    name = "ipp-server",
+    about = "Rust ext_proc server for AI Gateway payload processing"
+)]
 struct Cli {
     #[arg(long, default_value = "9004", help = "gRPC ext_proc port")]
     grpc_port: u16,
@@ -34,17 +37,24 @@ struct Cli {
 
 async fn build_plugins(
     cli: &Cli,
-) -> Result<(Vec<Box<dyn RequestProcessor>>, Vec<Box<dyn ResponseProcessor>>)> {
-    use ipp_plugins::apikey_injection::ApiKeyInjectionPlugin;
-    use ipp_plugins::apikey_injection::secret_store::SecretStore;
-    use ipp_plugins::body_field_to_header::BodyFieldToHeaderPlugin;
+) -> Result<(
+    Vec<Box<dyn RequestProcessor>>,
+    Vec<Box<dyn ResponseProcessor>>,
+)> {
     use ipp_plugins::api_translation::{ApiTranslationPlugin, VertexOpenAiConfig};
+    use ipp_plugins::apikey_injection::secret_store::SecretStore;
+    use ipp_plugins::apikey_injection::ApiKeyInjectionPlugin;
+    use ipp_plugins::body_field_to_header::BodyFieldToHeaderPlugin;
 
     let secret_store = SecretStore::new();
 
     let body_to_header = BodyFieldToHeaderPlugin::new("model", "X-Gateway-Model-Name")?;
 
-    let vertex_config = match (&cli.vertex_project, &cli.vertex_location, &cli.vertex_endpoint) {
+    let vertex_config = match (
+        &cli.vertex_project,
+        &cli.vertex_location,
+        &cli.vertex_endpoint,
+    ) {
         (Some(project), Some(location), Some(endpoint)) => Some(VertexOpenAiConfig {
             project: project.clone(),
             location: location.clone(),
@@ -85,8 +95,7 @@ async fn build_plugins(
 async fn main() -> Result<()> {
     tracing_subscriber::fmt()
         .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "info".into()),
+            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()),
         )
         .init();
 

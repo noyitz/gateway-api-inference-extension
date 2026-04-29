@@ -16,7 +16,10 @@ pub async fn run_secret_watcher(client: Client, store: SecretStore) {
     let api: Api<Secret> = Api::all(client);
     let config = watcher::Config::default().labels(&format!("{}=true", MANAGED_LABEL));
 
-    info!("Starting Secret watcher with label selector {}=true", MANAGED_LABEL);
+    info!(
+        "Starting Secret watcher with label selector {}=true",
+        MANAGED_LABEL
+    );
 
     let mut stream = watcher::watcher(api, config).applied_objects().boxed();
 
@@ -44,7 +47,8 @@ pub async fn run_secret_watcher(client: Client, store: SecretStore) {
                 let mut credentials = HashMap::new();
                 if let Some(data) = &secret.data {
                     for (field, value) in data {
-                        credentials.insert(field.clone(), String::from_utf8_lossy(&value.0).to_string());
+                        credentials
+                            .insert(field.clone(), String::from_utf8_lossy(&value.0).to_string());
                     }
                 }
 

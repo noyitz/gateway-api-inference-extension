@@ -47,11 +47,7 @@ impl Translator for AzureOpenAiTranslator {
         })
     }
 
-    fn translate_response(
-        &self,
-        body: &mut Value,
-        _model: &str,
-    ) -> Result<bool, PluginError> {
+    fn translate_response(&self, body: &mut Value, _model: &str) -> Result<bool, PluginError> {
         Ok(self.stripper.strip(body))
     }
 }
@@ -91,9 +87,7 @@ mod tests {
             .unwrap();
         assert!(mutated);
         assert!(body.get("prompt_filter_results").is_none());
-        assert!(body["choices"][0]
-            .get("content_filter_results")
-            .is_none());
+        assert!(body["choices"][0].get("content_filter_results").is_none());
         assert!(body["choices"][0].get("message").is_some());
     }
 

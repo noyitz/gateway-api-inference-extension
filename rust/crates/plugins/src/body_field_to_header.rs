@@ -69,10 +69,7 @@ mod tests {
         req.set_body(json!({"model": "gpt-4o", "messages": []}));
 
         plugin.process_request(&mut cs, &mut req).unwrap();
-        assert_eq!(
-            req.headers.get("X-Gateway-Model-Name").unwrap(),
-            "gpt-4o"
-        );
+        assert_eq!(req.headers.get("X-Gateway-Model-Name").unwrap(), "gpt-4o");
     }
 
     #[test]

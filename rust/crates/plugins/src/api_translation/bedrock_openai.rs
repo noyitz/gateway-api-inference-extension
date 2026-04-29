@@ -34,11 +34,7 @@ impl Translator for BedrockOpenAiTranslator {
         })
     }
 
-    fn translate_response(
-        &self,
-        _body: &mut Value,
-        _model: &str,
-    ) -> Result<bool, PluginError> {
+    fn translate_response(&self, _body: &mut Value, _model: &str) -> Result<bool, PluginError> {
         Ok(false)
     }
 }

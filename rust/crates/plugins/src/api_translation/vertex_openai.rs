@@ -48,11 +48,7 @@ impl Translator for VertexOpenAiTranslator {
         })
     }
 
-    fn translate_response(
-        &self,
-        body: &mut Value,
-        _model: &str,
-    ) -> Result<bool, PluginError> {
+    fn translate_response(&self, body: &mut Value, _model: &str) -> Result<bool, PluginError> {
         Ok(self.stripper.strip(body))
     }
 }

@@ -13,9 +13,5 @@ pub struct TranslateRequestResult {
 pub trait Translator: Send + Sync {
     fn translate_request(&self, body: &Value) -> Result<TranslateRequestResult, PluginError>;
 
-    fn translate_response(
-        &self,
-        body: &mut Value,
-        model: &str,
-    ) -> Result<bool, PluginError>;
+    fn translate_response(&self, body: &mut Value, model: &str) -> Result<bool, PluginError>;
 }

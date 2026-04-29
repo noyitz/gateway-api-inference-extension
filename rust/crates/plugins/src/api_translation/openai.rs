@@ -41,11 +41,7 @@ impl Translator for OpenAiTranslator {
         })
     }
 
-    fn translate_response(
-        &self,
-        _body: &mut Value,
-        _model: &str,
-    ) -> Result<bool, PluginError> {
+    fn translate_response(&self, _body: &mut Value, _model: &str) -> Result<bool, PluginError> {
         Ok(false)
     }
 }
@@ -97,7 +93,9 @@ mod tests {
     #[test]
     fn response_noop() {
         let mut body = json!({"choices": []});
-        let mutated = OpenAiTranslator.translate_response(&mut body, "gpt-4o-mini").unwrap();
+        let mutated = OpenAiTranslator
+            .translate_response(&mut body, "gpt-4o-mini")
+            .unwrap();
         assert!(!mutated);
     }
 }

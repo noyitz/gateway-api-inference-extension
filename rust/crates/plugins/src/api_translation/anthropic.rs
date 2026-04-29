@@ -14,10 +14,7 @@ pub struct AnthropicTranslator;
 
 impl Translator for AnthropicTranslator {
     fn translate_request(&self, body: &Value) -> Result<TranslateRequestResult, PluginError> {
-        let model = body
-            .get("model")
-            .and_then(Value::as_str)
-            .unwrap_or("");
+        let model = body.get("model").and_then(Value::as_str).unwrap_or("");
         if model.is_empty() {
             return Err(PluginError::bad_request("model field is required"));
         }
@@ -76,11 +73,7 @@ impl Translator for AnthropicTranslator {
         })
     }
 
-    fn translate_response(
-        &self,
-        body: &mut Value,
-        model: &str,
-    ) -> Result<bool, PluginError> {
+    fn translate_response(&self, body: &mut Value, model: &str) -> Result<bool, PluginError> {
         let body_type = body.get("type").and_then(Value::as_str).unwrap_or("");
 
         if body_type == "error" {
@@ -143,9 +136,7 @@ fn extract_messages(body: &Value) -> Result<Vec<&Value>, PluginError> {
     Ok(arr.iter().collect())
 }
 
-fn separate_system_messages(
-    messages: &[&Value],
-) -> Result<(String, Vec<Value>), PluginError> {
+fn separate_system_messages(messages: &[&Value]) -> Result<(String, Vec<Value>), PluginError> {
     let mut system_parts: Vec<String> = Vec::new();
     let mut anthropic_messages: Vec<Value> = Vec::new();
 
@@ -181,28 +172,14 @@ fn separate_system_messages(
     Ok((system, anthropic_messages))
 }
 
-fn extract_content_str<'a>(msg: &'a Value) -> &'a str {
-    match msg.get("content") {
-        Some(Value::String(s)) => s.as_str(),
-        Some(Value::Array(parts)) => {
-            // For array content, we can't return &str without allocation,
-            // so we fall back. This path is rare.
-            ""
-        }
-        _ => "",
-    }
-}
-
 fn extract_content_string(msg: &Value) -> String {
     match msg.get("content") {
         Some(Value::String(s)) => s.clone(),
-        Some(Value::Array(parts)) => {
-            parts
-                .iter()
-                .filter_map(|p| p.get("text").and_then(Value::as_str))
-                .collect::<Vec<_>>()
-                .join(" ")
-        }
+        Some(Value::Array(parts)) => parts
+            .iter()
+            .filter_map(|p| p.get("text").and_then(Value::as_str))
+            .collect::<Vec<_>>()
+            .join(" "),
         _ => String::new(),
     }
 }
@@ -230,9 +207,7 @@ fn build_assistant_message(msg: &Value) -> Value {
             .and_then(Value::as_str)
             .unwrap_or("");
         let input = match func.and_then(|f| f.get("arguments")) {
-            Some(Value::String(s)) => {
-                serde_json::from_str(s).unwrap_or(json!({}))
-            }
+            Some(Value::String(s)) => serde_json::from_str(s).unwrap_or(json!({})),
             Some(v) if !v.is_null() => v.clone(),
             _ => json!({}),
         };
@@ -294,7 +269,11 @@ fn extract_stop_sequences(body: &Value) -> Option<Vec<String>> {
                 .iter()
                 .filter_map(|v| v.as_str().map(String::from))
                 .collect();
-            if seqs.is_empty() { None } else { Some(seqs) }
+            if seqs.is_empty() {
+                None
+            } else {
+                Some(seqs)
+            }
         }
         _ => None,
     }
@@ -537,7 +516,11 @@ mod tests {
             "messages": [{"role": "user", "content": "Hi"}]
         });
         assert_eq!(
-            AnthropicTranslator.translate_request(&body).unwrap().body.unwrap()["max_tokens"],
+            AnthropicTranslator
+                .translate_request(&body)
+                .unwrap()
+                .body
+                .unwrap()["max_tokens"],
             200
         );
     }
@@ -551,7 +534,11 @@ mod tests {
             "stop": ["END"],
             "messages": [{"role": "user", "content": "Hi"}]
         });
-        let translated = AnthropicTranslator.translate_request(&body).unwrap().body.unwrap();
+        let translated = AnthropicTranslator
+            .translate_request(&body)
+            .unwrap()
+            .body
+            .unwrap();
         assert_eq!(translated["temperature"], 0.7);
         assert_eq!(translated["top_p"], 0.9);
         assert_eq!(translated["stop_sequences"], json!(["END"]));
@@ -565,7 +552,11 @@ mod tests {
             "messages": [{"role": "user", "content": "Hi"}]
         });
         assert_eq!(
-            AnthropicTranslator.translate_request(&body).unwrap().body.unwrap()["stream"],
+            AnthropicTranslator
+                .translate_request(&body)
+                .unwrap()
+                .body
+                .unwrap()["stream"],
             true
         );
     }
@@ -584,7 +575,11 @@ mod tests {
                 }
             }]
         });
-        let translated = AnthropicTranslator.translate_request(&body).unwrap().body.unwrap();
+        let translated = AnthropicTranslator
+            .translate_request(&body)
+            .unwrap()
+            .body
+            .unwrap();
         let tools = translated["tools"].as_array().unwrap();
         assert_eq!(tools.len(), 1);
         assert_eq!(tools[0]["name"], "get_weather");
@@ -600,7 +595,11 @@ mod tests {
             "tool_choice": "auto"
         });
         assert_eq!(
-            AnthropicTranslator.translate_request(&body).unwrap().body.unwrap()["tool_choice"]["type"],
+            AnthropicTranslator
+                .translate_request(&body)
+                .unwrap()
+                .body
+                .unwrap()["tool_choice"]["type"],
             "auto"
         );
     }
@@ -614,7 +613,11 @@ mod tests {
             "tool_choice": "required"
         });
         assert_eq!(
-            AnthropicTranslator.translate_request(&body).unwrap().body.unwrap()["tool_choice"]["type"],
+            AnthropicTranslator
+                .translate_request(&body)
+                .unwrap()
+                .body
+                .unwrap()["tool_choice"]["type"],
             "any"
         );
     }
@@ -627,7 +630,11 @@ mod tests {
             "tools": [{"type": "function", "function": {"name": "get_weather", "parameters": {}}}],
             "tool_choice": {"type": "function", "function": {"name": "get_weather"}}
         });
-        let tc = &AnthropicTranslator.translate_request(&body).unwrap().body.unwrap()["tool_choice"];
+        let tc = &AnthropicTranslator
+            .translate_request(&body)
+            .unwrap()
+            .body
+            .unwrap()["tool_choice"];
         assert_eq!(tc["type"], "tool");
         assert_eq!(tc["name"], "get_weather");
     }
@@ -650,7 +657,11 @@ mod tests {
                 {"role": "tool", "tool_call_id": "call_1", "content": "72°F"}
             ]
         });
-        let msgs = AnthropicTranslator.translate_request(&body).unwrap().body.unwrap()["messages"]
+        let msgs = AnthropicTranslator
+            .translate_request(&body)
+            .unwrap()
+            .body
+            .unwrap()["messages"]
             .as_array()
             .unwrap()
             .clone();
@@ -684,7 +695,11 @@ mod tests {
                 {"role": "tool", "tool_call_id": "c2", "content": "r2"}
             ]
         });
-        let msgs = AnthropicTranslator.translate_request(&body).unwrap().body.unwrap()["messages"]
+        let msgs = AnthropicTranslator
+            .translate_request(&body)
+            .unwrap()
+            .body
+            .unwrap()["messages"]
             .as_array()
             .unwrap()
             .clone();
@@ -764,7 +779,9 @@ mod tests {
             "stop_reason": "max_tokens",
             "usage": {"input_tokens": 5, "output_tokens": 100}
         });
-        AnthropicTranslator.translate_response(&mut body, "claude").unwrap();
+        AnthropicTranslator
+            .translate_response(&mut body, "claude")
+            .unwrap();
         assert_eq!(body["choices"][0]["finish_reason"], "length");
     }
 
@@ -779,9 +796,13 @@ mod tests {
             "stop_reason": "tool_use",
             "usage": {"input_tokens": 10, "output_tokens": 20}
         });
-        AnthropicTranslator.translate_response(&mut body, "claude").unwrap();
+        AnthropicTranslator
+            .translate_response(&mut body, "claude")
+            .unwrap();
         assert_eq!(body["choices"][0]["finish_reason"], "tool_calls");
-        let tc = body["choices"][0]["message"]["tool_calls"].as_array().unwrap();
+        let tc = body["choices"][0]["message"]["tool_calls"]
+            .as_array()
+            .unwrap();
         assert_eq!(tc.len(), 1);
         assert_eq!(tc[0]["function"]["name"], "get_weather");
     }
@@ -792,7 +813,9 @@ mod tests {
             "type": "error",
             "error": {"type": "invalid_request_error", "message": "model not found"}
         });
-        AnthropicTranslator.translate_response(&mut body, "claude").unwrap();
+        AnthropicTranslator
+            .translate_response(&mut body, "claude")
+            .unwrap();
         assert_eq!(body["error"]["type"], "invalid_request_error");
         assert_eq!(body["error"]["message"], "model not found");
     }
@@ -805,7 +828,9 @@ mod tests {
             "stop_reason": "end_turn",
             "usage": {"input_tokens": 1, "output_tokens": 1}
         });
-        AnthropicTranslator.translate_response(&mut body, "").unwrap();
+        AnthropicTranslator
+            .translate_response(&mut body, "")
+            .unwrap();
         assert_eq!(body["model"], "claude-3-haiku");
     }
 

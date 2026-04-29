@@ -23,7 +23,9 @@ impl ResponseFieldStripper {
             Some(obj) => obj,
             None => return false,
         };
-        self.field_paths.iter().any(|fp| check_field_exists(obj, fp, 0))
+        self.field_paths
+            .iter()
+            .any(|fp| check_field_exists(obj, fp, 0))
     }
 
     pub fn strip(&self, body: &mut Value) -> bool {

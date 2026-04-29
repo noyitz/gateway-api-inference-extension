@@ -69,9 +69,7 @@ mod tests {
     #[test]
     fn empty_credentials_rejected() {
         let store = SecretStore::new();
-        let err = store
-            .add_or_update("ns/empty", HashMap::new())
-            .unwrap_err();
+        let err = store.add_or_update("ns/empty", HashMap::new()).unwrap_err();
         assert!(err.contains("no data fields"));
     }
 
