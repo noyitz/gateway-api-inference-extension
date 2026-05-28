@@ -39,3 +39,4 @@ config/charts/**/Chart.lock
 
 # Ignore all .tgz files anywhere under config/charts
 config/charts/**/*.tgz
+rust/
